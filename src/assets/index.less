@@ -1,0 +1,49 @@
+[data-type='NodeBlockquote'].bq[data-node-id][custom-kp-b='extract'] {
+  //padding-left: 2rem;
+  padding-top: 1rem;
+  background-color: #c0efb00a;
+
+  &::before {
+    content: 'T' !important;
+    position: absolute !important;
+    left: 0 !important;
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    //top: 1.4rem !important;
+    top: 0 !important;
+    display: inline-block;
+    color: white;
+    background-color: #c0efb0;
+    text-shadow: -2px 0 0 #000, 2px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000;
+    text-align: center;
+    font-weight: bolder;
+    border-top-left-radius: var(--b3-border-radius);
+  }
+
+  &::after {
+    content: attr(updated) !important;
+    top: 0;
+    display: inline-block;
+    position: absolute;
+    color: #80808057;
+    right: 0;
+    font-size: 0.8rem;
+  }
+}
+
+// TODO 使用has选择器将图标嵌到面包屑中
+[custom-riff-decks] .protyle-title__input {
+  &::before {
+    content: 'T' !important;
+    position: absolute !important;
+    width: 1.5em !important;
+    height: 1.5em !important;
+    display: inline-block;
+    color: white;
+    background-color: #c0efb0;
+    text-shadow: -2px 0 0 #000, 2px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000;
+    text-align: center;
+    font-weight: bolder;
+    right: 0;
+  }
+}

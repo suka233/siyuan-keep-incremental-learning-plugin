@@ -1,11 +1,11 @@
 <script setup lang="ts"></script>
 
 <template>
-  <span class="kp-item-icon">L</span>
+  <span class="ki-item-icon">L</span>
 </template>
 
 <style scoped lang="less">
-.kp-item-icon {
+.ki-item-icon {
   color: white;
   background-color: #0000ff;
   text-shadow: -2px 0 0 #000, 2px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000;

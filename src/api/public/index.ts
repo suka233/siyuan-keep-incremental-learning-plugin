@@ -12,7 +12,8 @@ enum Api {
   SetBlockAttrs = '/api/attr/setBlockAttrs',
   ListNotebook = '/api/notebook/lsNotebooks',
   '创建日记' = '/api/filetree/createDailyNote',
-  '获取闪卡' = '/api/riff/getRiffCards'
+  '获取闪卡' = '/api/riff/getRiffCards',
+  '跳过闪卡' = '/api/riff/skipReviewRiffCard'
 }
 
 /**
@@ -221,4 +222,11 @@ export const getRiffCards = (page = 1) => {
  */
 export const getAllRiffCards = () => {
   return 向思源请求数据(Api['获取闪卡'], { id: '', page: 1, pageSize: 99999 })
+}
+
+/**
+ * 跳过闪卡
+ */
+export const skipReviewRiffCard = (cardID: string, deckID?: string) => {
+  return 向思源请求数据(Api['跳过闪卡'], { cardID, deckID, rating: -3 })
 }

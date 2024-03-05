@@ -1,5 +1,5 @@
 import { Plugin } from 'siyuan'
-import KPDock from '@/components/KPDock/index.vue'
+import KIDock from '@/components/KIDock/index.vue'
 import { createApp } from 'vue'
 import Antd from 'ant-design-vue'
 
@@ -17,8 +17,8 @@ export const registerIcon = (name, size, svg) => {
   )
 }
 
-export const initKPDock = async (plugin: Plugin) => {
-  let KPApp
+export const initKIDock = async (plugin: Plugin) => {
+  let KIApp
   plugin.addDock({
     config: {
       position: 'LeftBottom',
@@ -26,16 +26,16 @@ export const initKPDock = async (plugin: Plugin) => {
         width: 200,
         height: 0
       },
-      icon: 'iconKProgressive',
-      title: 'KProgressive'
+      icon: 'iconKI',
+      title: 'KeepIncremental'
     },
-    type: 'KProgressiveDock',
+    type: 'KIDock',
     init() {
       const root = this.element
-      KPApp = createApp(KPDock).provide('plugin', plugin)
-      KPApp.use(Antd).mount(root)
+      KIApp = createApp(KIDock).provide('plugin', plugin)
+      KIApp.use(Antd).mount(root)
       this.data.destroy = () => {
-        root && KPApp.unmount()
+        root && KIApp.unmount()
       }
     },
     data: {},
@@ -43,5 +43,5 @@ export const initKPDock = async (plugin: Plugin) => {
       this.data.destroy && this.data.destroy()
     }
   })
-  return KPApp
+  return KIApp
 }

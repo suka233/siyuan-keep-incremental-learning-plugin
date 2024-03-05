@@ -1,4 +1,4 @@
-[data-type='NodeBlockquote'].bq[data-node-id][custom-kp-b='extract'] {
+[data-type='NodeBlockquote'].bq[data-node-id][custom-ki-b='extract'] {
   //padding-left: 2rem;
   padding-top: 1rem;
   background-color: #c0efb00a;
@@ -46,4 +46,11 @@
     font-weight: bolder;
     right: 0;
   }
+}
+
+// 测试用css
+[data-node-id]::after {
+  content:attr(data-node-id);
+  color: gray;
+  font-size: 0.5rem;
 }

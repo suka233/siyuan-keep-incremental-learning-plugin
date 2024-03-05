@@ -1,5 +1,5 @@
 {
-  "name": "kprogressive-plugin",
+  "name": "keep-incremental-learning-plugin",
   "author": "suka233",
   "url": "https://github.com/suka233/siyuan-knote",
   "version": "1.0.0",
@@ -7,12 +7,12 @@
   "backends": ["all"],
   "frontends": ["all"],
   "displayName": {
-    "zh_CN": "KProgressive插件",
-    "en_US": "KProgressive plugin"
+    "zh_CN": "KeepIncremental渐进式学习插件",
+    "en_US": "Keep Incremental Learning plugin"
   },
   "description": {
-    "zh_CN": "kprogressive",
-    "en_US": "kprogressive"
+    "zh_CN": "Keep Incremental渐进式学习插件",
+    "en_US": "Keep Incremental Learning plugin"
   },
   "readme": {
     "zh_CN": "README.md"

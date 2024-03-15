@@ -12,14 +12,31 @@
         }
       }"
     >
-      <a-tree :tree-data="treeData" @select="handleSelect">
-        <template #title="{ title, key, type, isTopic }">
+      <a-tree
+        v-if="treeData?.length"
+        :show-line="true"
+        ref="treeRef"
+        :height="233"
+        :tree-data="treeData"
+        @select="handleSelect"
+        v-model:expanded-keys="expandedKeys"
+        v-model:selected-keys="selectedKeys"
+        @rightClick="handleRightClick"
+      >
+        <template #title="{ title, key, type, isTopic, isDismiss, params }">
           <div class="text-truncate max-w-xs">
             <span v-if="type || isTopic">
-              <topic-icon v-if="type === 'NodeDocument' || isTopic" />
+              <topic-icon v-if="type === 'NodeDocument' || isTopic" :isDismiss="isDismiss" />
               <item-icon v-else />
             </span>
-            {{ title }}
+            <span>
+              {{ title }}
+            </span>
+
+            <!--            优先级展示-->
+            <span v-if="params">
+              {{ ` (${params?.ial?.['custom-card-priority'] ?? 50})` }}
+            </span>
           </div>
         </template>
       </a-tree>
@@ -29,11 +46,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject } from 'vue'
+import { ref, inject, onMounted } from 'vue'
 import { Protyle } from 'siyuan'
 import TopicIcon from './components/TopicIcon/index.vue'
 import ItemIcon from './components/ItemIcon/index.vue'
 import { useData } from '@/hooks/useData'
+import { useKIDock } from '@/components/KIDock/useKIDock'
 const { refreshTreeData, treeData, refreshAllRiffCards } = useData()
 
 // refresh()
@@ -48,6 +66,11 @@ const test = async () => {
 
 const plugin = inject('plugin')
 const turnIntoOne = () => {
+  console.log(treeRef.value)
+  console.log(expandedKeys.value)
+  autoExpandParent.value = false
+  // treeRef.value.scrollTo({ key: '20240305170626-0p3yxnf', align: 'top' })
+  return
   // console.log(plugin)
   new Protyle(plugin.app, document.createElement('div'), {
     after(protyle) {
@@ -58,9 +81,25 @@ const turnIntoOne = () => {
 }
 
 const handleSelect = (key: [], e) => {
-  window.openFileByURL(`siyuan://blocks/${key[0]}`)
   console.log(key)
   console.log(e)
+  if (e?.node?.dataRef?.isBox) {
+    // 首级标题不可点击
+    return
+  }
+  window.openFileByURL(`siyuan://blocks/${key[0]}`)
 }
+
+let { selectedKeys, scrollTo, expandedKeys, autoExpandParent } = useKIDock()
+const treeRef = ref(null)
+const handleRightClick = (e) => {
+  console.log('Rclick', e)
+}
+
+onMounted(() => {
+  scrollTo = (key) => {
+    treeRef.value.scrollTo({ key, align: 'top' })
+  }
+})
 </script>
 <style scoped></style>

@@ -13,7 +13,13 @@ enum Api {
   ListNotebook = '/api/notebook/lsNotebooks',
   '创建日记' = '/api/filetree/createDailyNote',
   '获取闪卡' = '/api/riff/getRiffCards',
-  '跳过闪卡' = '/api/riff/skipReviewRiffCard'
+  '跳过闪卡' = '/api/riff/skipReviewRiffCard',
+  '获取块属性' = '/api/attr/getBlockAttrs',
+  '批量推迟闪卡' = '/api/riff/batchSetRiffCardsDueTime',
+  '批量设置块属性' = '/api/attr/batchSetBlockAttrs',
+  '复习闪卡' = '/api/riff/reviewRiffCard',
+  '获取块信息' = '/api/block/getBlockInfo',
+  '根据路径列出子文档' = '/api/filetree/listDocsByPath'
 }
 
 /**
@@ -229,4 +235,57 @@ export const getAllRiffCards = () => {
  */
 export const skipReviewRiffCard = (cardID: string, deckID?: string) => {
   return 向思源请求数据(Api['跳过闪卡'], { cardID, deckID, rating: -3 })
+}
+
+/**
+ * 获取块属性
+ */
+export const getBlockAttrs = (id: string) => {
+  return 向思源请求数据(Api['获取块属性'], { id })
+}
+
+/**
+ * 批量推迟闪卡
+ */
+export const batchSetRiffCardsDueTime = (cardDues: Array<{ id: string; due: string }>) => {
+  return 向思源请求数据(Api['批量推迟闪卡'], { cardDues })
+}
+
+/**
+ * 批量设置块属性
+ */
+export const batchSetBlockAttrs = (blockAttrs: Array<ISetBlockAttrsParam>) => {
+  return 向思源请求数据(Api['批量设置块属性'], {
+    blockAttrs
+  })
+}
+
+/**
+ * 复习闪卡
+ */
+export const reviewRiffCard = (cardID: string, deckID: string, rating: number) => {
+  return 向思源请求数据(Api['复习闪卡'], { cardID, deckID, rating })
+}
+
+/**
+ * 获取块信息
+ */
+export const getBlockInfo = (id: string) => {
+  return 向思源请求数据(Api['获取块信息'], { id })
+}
+
+/**
+ * 根据路径列出子文档
+ * maxListCount
+ * :
+ * 0
+ * notebook
+ * :
+ * "20230911113320-nde1ict"
+ * path
+ * :
+ * "/20240305105012-boef2to/20240312113227-wnnzswd.sy"
+ */
+export const listDocsByPath = (notebook: string, path: string) => {
+  return 向思源请求数据(Api['根据路径列出子文档'], { maxListCount: 0, notebook, path })
 }

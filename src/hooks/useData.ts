@@ -1,6 +1,9 @@
 import { ref } from 'vue'
 import { getAllRiffCards, listNotebook } from '@/api/public'
+import { cloneDeep } from 'lodash-es'
 interface ITreeNode {
+  expandPath: string[]
+  params?: IRiffCard
   /** 标题 */
   title: string
   key: any
@@ -13,7 +16,12 @@ interface ITreeNode {
    * 是否是摘录卡,适配 非文档块 被手动标记为摘录卡的情况
    */
   isTopic?: boolean
+  /**
+   * 是否dismiss
+   */
+  isDismiss?: boolean
   children?: ITreeNode | []
+  isBox?: boolean
 }
 export interface IRiffCard {
   box: string
@@ -82,6 +90,8 @@ export const useData = () => {
     const tree: ITreeNode[] = []
     const notebookMap = new Map(notebooks.value!.map((notebook) => [notebook.id, notebook.name]))
     const topicMap = allRiffCards.value!.filter((item) => item.type === 'NodeDocument').map((item) => item.id)
+    // TODO 两次filter应该可以合二为一
+    const dismissMap = allRiffCards.value!.filter((item) => item?.ial['custom-ki-dismiss']).map((item) => item.id)
     // console.log(topicMap)
 
     allRiffCards.value!.forEach((card) => {
@@ -119,6 +129,10 @@ export const useData = () => {
             key,
             // 是否是摘录卡
             isTopic: topicMap.includes(key),
+            // 是否dismiss
+            isDismiss: dismissMap.includes(key),
+            // 是否是第一层级，是的话就是box，标注一下
+            isBox: index === 0,
             // children:
             //   index === endIndex
             //     ? [{ ...cloneDeep(card), title: card.content, key: card.id, isTopic: card.type === 'NodeDocument' }]
@@ -128,6 +142,8 @@ export const useData = () => {
 
           if (index === endIndex) {
             newNode.type = card.type
+            newNode.params = cloneDeep(card)
+            newNode.expandPath = splitPaths
           }
 
           // 在当前层级push进构造好的新节点

@@ -1,12 +1,17 @@
 import { fetchSyncPost, IOperation, IProtyle, Protyle } from 'siyuan'
 import { ref } from 'vue'
-import { appendBlock } from '@/api/public'
+import { appendBlock, batchSetRiffCardsDueTime, getBlockAttrs, reviewRiffCard, setBlockAttrs } from '@/api/public'
+import dayjs from 'dayjs'
+import { deburr } from 'lodash-es'
+import { useData } from '@/hooks/useData'
+import { KIAttr } from '@/enum'
 
 const luteEngine = globalThis.Lute.New()
 const MAKEDATE = 'custom-make-date'
 const SOURCEROAD = 'custom-source-road'
 const builtInDeck = '20230218211946-2kw8jgx'
 const extractTransactionsId = ref('')
+const { refreshAllRiffCards, allRiffCards, refreshTreeData } = useData()
 export const useExtract = () => {
   //   const extract = async (protyle: IProtyle & { getInstance: () => Protyle }) => {
   //     const selectNode = document.querySelectorAll('.protyle-wysiwyg--select')
@@ -54,16 +59,23 @@ export const useExtract = () => {
     if (selectionContent[0].length <= 1) {
       return
     }
-    const subFileID = await createSubFile(selectionContent[1], selectionContent[2], selectionContent[0])
+    const { id: subFileID, priority } = await createSubFile(
+      selectionContent[1],
+      selectionContent[2],
+      selectionContent[0]
+    )
 
     await addCard(subFileID)
     cardData = {
       deckID: builtInDeck,
       blockID: subFileID
     }
-    await addExtractInfo(subFileID, protyle)
+    await addExtractInfo(subFileID, protyle, priority)
+    // TODO 添加后台任务，执行自动评分3分，自动推迟2天，删除自定义属性custom-ki-first-extract
+    setTimeout(async () => {
+      await addDocToTopic(subFileID)
+    }, 5000)
 
-    // 将这张摘录卡评分并推迟
     return cardData
   }
   const quoteTransaction = (protyle, selectedNode) => {
@@ -339,7 +351,8 @@ async function updateBlockStyle(el: HTMLElement) {
 }
 
 async function createSubFile(title: string, id: string, content = '') {
-  const [FileID, NotebookId, Hpath] = await getBlockInfo(id)
+  const [FileID, NotebookId, Hpath, parentPriority] = await getBlockInfo(id)
+  console.log('parentPriority', parentPriority)
   // 还要去除零宽度空格
   let subTitle = title
     .slice(0, 15)
@@ -354,26 +367,33 @@ async function createSubFile(title: string, id: string, content = '') {
   })
   if (data.code != 0) {
     console.log(data.msg)
-    return ''
+    return {}
   }
-  return data.data
+  return { id: data.data, priority: parentPriority }
 }
 
 async function getBlockInfo(id: string) {
   const queryData = await fetchSyncPost('/api/query/sql', {
     stmt: `SELECT root_id, box, hpath FROM blocks WHERE id == \"${id}\"`
+    // stmt: `SELECT * FROM blocks WHERE id == \"${id}\"`
   })
   if (queryData.code != 0) {
     console.log('query fail！')
     return
   }
+
   const DocId = queryData.data[0]['root_id']
   const notebookId = queryData.data[0]['box']
   const hpath = queryData.data[0]['hpath']
-  return [DocId, notebookId, hpath]
+
+  const { data } = await getBlockAttrs(DocId)
+
+  // TODO 默认50
+  const parentPriority = data['custom-card-priority'] ?? 50
+  return [DocId, notebookId, hpath, parentPriority]
 }
 
-async function addCard(id: string) {
+export async function addCard(id: string) {
   const body = {
     deckID: builtInDeck,
     blockIDs: [id]
@@ -381,12 +401,39 @@ async function addCard(id: string) {
   await fetchSyncPost('/api/riff/addRiffCards', body)
 }
 
-async function addExtractInfo(newDocID: string, protyle: IProtyle) {
+async function addExtractInfo(newDocID: string, protyle: IProtyle, priority: string) {
   await fetchSyncPost('/api/attr/setBlockAttrs', {
     id: newDocID,
     attrs: {
       'custom-plugin-incremental-reading': 'true',
-      'custom-extract-source': getSourceId(protyle)
+      'custom-extract-source': getSourceId(protyle),
+      'custom-ki-first-extract': dayjs().format('YYYYMMDDHHmmss'),
+      'custom-card-priority': priority
     }
   })
+}
+
+// 仅仅适应于复习闪卡的情况，如果是闪卡树右键来推迟，那么due的计算要加上原本的due，否则就是delay天后复习
+async function delayRiffCard(riffID: string, delay = 2) {
+  return await batchSetRiffCardsDueTime([
+    {
+      id: riffID,
+      due: dayjs().add(delay, 'day').format('YYYYMMDDHHmmss')
+    }
+  ])
+}
+
+// 自动评分3分，自动推迟2天，删除自定义属性custom-ki-first-extract
+export async function addDocToTopic(docId: string, rating = 3, delay = 2) {
+  // TODO 这里的刷新是为了获取到最新的闪卡数据，最新的接口可以根据docId获取到riffCardID，之后可以切换
+  await refreshAllRiffCards()
+  refreshTreeData()
+  const card = allRiffCards.value?.find((card) => card.id === docId)
+  // 评分3分
+  await reviewRiffCard(card!.riffCardID, card!.ial['custom-riff-decks']!, rating)
+  // 推迟2天
+  await delayRiffCard(card!.riffCardID, delay)
+  // 删除自定义属性custom-ki-first-extract
+
+  await setBlockAttrs({ id: docId, attrs: { [KIAttr['first-extract']]: '' } })
 }

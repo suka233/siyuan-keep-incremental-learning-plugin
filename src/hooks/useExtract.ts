@@ -424,16 +424,21 @@ async function delayRiffCard(riffID: string, delay = 2) {
 }
 
 // 自动评分3分，自动推迟2天，删除自定义属性custom-ki-first-extract
-export async function addDocToTopic(docId: string, rating = 3, delay = 2) {
+// 当rating为skip时，跳过评分流程
+// 当delay为skip时，跳过推迟流程
+export async function addDocToTopic(docId: string, rating: number | string = 3, delay: number | string = 2) {
   // TODO 这里的刷新是为了获取到最新的闪卡数据，最新的接口可以根据docId获取到riffCardID，之后可以切换
   await refreshAllRiffCards()
   refreshTreeData()
   const card = allRiffCards.value?.find((card) => card.id === docId)
   // 评分3分
-  await reviewRiffCard(card!.riffCardID, card!.ial['custom-riff-decks']!, rating)
+  if (rating !== 'skip') {
+    await reviewRiffCard(card!.riffCardID, card!.ial['custom-riff-decks']!, rating as number)
+  }
   // 推迟2天
-  await delayRiffCard(card!.riffCardID, delay)
+  if (delay !== 'skip') {
+    await delayRiffCard(card!.riffCardID, delay as number)
+  }
   // 删除自定义属性custom-ki-first-extract
-
   await setBlockAttrs({ id: docId, attrs: { [KIAttr['first-extract']]: '' } })
 }

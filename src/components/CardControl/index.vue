@@ -47,7 +47,7 @@
 import { inject, ref } from 'vue'
 import { useData } from '@/hooks/useData'
 import dayjs, { type Dayjs } from 'dayjs'
-import { confirm } from 'siyuan'
+import { confirm, showMessage } from 'siyuan'
 import { batchSetRiffCardsDueTime, setBlockAttrs } from '@/api/public'
 import { KIAttr } from '@/enum'
 import { useCardControlApp } from '@/hooks/useCardControlApp'
@@ -119,6 +119,8 @@ const handleChangePriority = async (value: number) => {
       'custom-card-priority': value.toString()
     }
   })
+
+  showMessage(`优先级已更新为:${value}`)
 
   // TODO 刷新树,这里直接调用会不生效，因为上述更改还未索引，所以需要等待一会儿，准备用后台任务来搞一下
   setTimeout(async () => {

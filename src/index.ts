@@ -1,14 +1,26 @@
-import { confirm, Dialog, getFrontend, type ICard, type ICardData, IProtyle, Menu, Plugin, type Protyle } from 'siyuan'
+import {
+  confirm,
+  Dialog,
+  getFrontend,
+  type ICard,
+  type ICardData,
+  IProtyle,
+  Menu,
+  Plugin,
+  type Protyle,
+  showMessage
+} from 'siyuan'
 import type { ITab } from 'siyuan'
 import 'uno.css'
 import { kpIcon } from './assets/icon'
 import { initKIDock, registerIcon } from '@/utils'
 import './assets/index.less'
-import { getSelectionContent, useExtract } from '@/hooks/useExtract'
+import { addCard, addDocToTopic, getSelectionContent, useExtract } from '@/hooks/useExtract'
 import { type IRiffCard, useData } from '@/hooks/useData'
 import { cloneDeep, debounce } from 'lodash-es'
-import { setBlockAttrs, skipReviewRiffCard } from '@/api/public'
+import { getBlockAttrs, getBlockInfo, listDocsByPath, setBlockAttrs, skipReviewRiffCard } from '@/api/public'
 import { useCardControlApp } from '@/hooks/useCardControlApp'
+import { KIAttr, OuterAttr } from '@/enum'
 export default class KIPlugin extends Plugin {
   // private isMobile!: boolean
   // public menuElement!: HTMLElement
@@ -55,11 +67,26 @@ export default class KIPlugin extends Plugin {
     // 初始化dock
     await initKIDock(this)
 
+    const { refreshTreeData, refreshAllRiffCards } = useData()
+
+    // 在一些时机刷新闪卡树
     this.eventBus.on('ws-main', (e) => {
       if (e.detail.cmd === 'transactions') {
-        // 如果e.detail.data[0].doOperations[0].action === 'addFlashcards'
+        // 如果
+        if (e.detail.data[0].doOperations[0].action === 'addFlashcards') {
+          refreshAllRiffCards().then(() => {
+            refreshTreeData()
+          })
+        }
       }
     })
+
+    // 每分钟刷新一次闪卡树
+    setInterval(() => {
+      refreshAllRiffCards().then(() => {
+        refreshTreeData()
+      })
+    }, 1000 * 60)
 
     this.addCommand({
       langKey: 'extractNote',
@@ -114,7 +141,7 @@ export default class KIPlugin extends Plugin {
     let observer
     const { initCardControllerApp } = useCardControlApp()
     this.eventBus.on('loaded-protyle-static', async (e) => {
-      console.log(e)
+      // console.log(e)
       if (e.detail.protyle?.element?.parentElement?.classList.value.includes('card__main')) {
         const cardMain = e.detail.protyle.element.parentElement
         const header = cardMain.firstElementChild!
@@ -129,7 +156,7 @@ export default class KIPlugin extends Plugin {
         const blockId = e.detail.protyle.block.id!
         const blockType = blockElement.getAttribute('data-doc-type')
         const isTopic = blockType === 'NodeDocument'
-        console.log(`blockId:${blockId},blockType:${blockType}`)
+        // console.log(`blockId:${blockId},blockType:${blockType}`)
 
         // 插入controller App 先移除旧的
         header.querySelectorAll('div[KICardController="true"]').forEach((div) => {
@@ -273,7 +300,10 @@ export default class KIPlugin extends Plugin {
     // 推迟所有带有custom-ki-first-extract: xxx 属性的卡，并删除这个属性。
     // 先获取所有的卡
     const { allRiffCards, refreshAllRiffCards } = useData()
-    await refreshAllRiffCards()
+    refreshAllRiffCards()
+
+    return options
+    // TODO 为了避免和其它插件的排序起冲突，这里的排序逻辑暂时不生效
     // 生成id:card的map
     const cardMap = new Map()
     allRiffCards.value!.forEach((card) => {
@@ -319,7 +349,95 @@ export default class KIPlugin extends Plugin {
       cards: filterCards
     })
   }
-  private blockIconEvent(e) {
-    console.log(e)
+  private blockIconEvent({ detail }) {
+    // console.log(detail)
+    const menu: Menu = detail.menu
+    const submenus: any[] = []
+    const ele: HTMLDivElement = detail.elements[0]
+    if (ele.getAttribute('data-type') === 'navigation-root') {
+      return
+    }
+    const parentDocId = ele.getAttribute('data-node-id')!
+
+    const setIncrementalBtn = document.createElement('div')
+    setIncrementalBtn.className = 'b3-menu__item'
+    setIncrementalBtn.innerHTML = `<svg class="b3-menu__icon" style=""><use xlink:href="#iconKI"></use></svg><span class="b3-menu__label">将子文档按顺序加入渐进式阅读流程</span>`
+    setIncrementalBtn.onclick = async () => {
+      // console.log('设置该文档的子文档为渐进式阅读文档', e)
+
+      const { data: parentDocAttrs } = await getBlockAttrs(parentDocId)
+      let hasPriority = false
+      let priority = 50
+      if (parentDocAttrs[OuterAttr['priority']]) {
+        hasPriority = true
+        priority = Number(parentDocAttrs[OuterAttr['priority']])
+      }
+
+      const {
+        data: { box, rootTitle, path }
+      } = await getBlockInfo(parentDocId)
+
+      const {
+        data: { files: childDocsList }
+      } = await listDocsByPath(box, path)
+
+      if (childDocsList.length === 0) {
+        showMessage('该文档没有子文档', undefined, 'error')
+        return
+      }
+
+      // TODO 这里只是简单的设置最后一项为目标文档，之后可以做成从后往前遍历，找到第一个没有custom-ki-dismiss的文档
+      const targetChildDoc = childDocsList[childDocsList.length - 1]
+      const confirmText = `
+      请确认如下信息：
+      该文档的标题为：${rootTitle}；
+      共有${childDocsList.length}个子文档；
+      您将要阅读的第一个文档标题为：${targetChildDoc.name}；
+      `
+
+      confirm('确定为此文档开启渐进式阅读？', confirmText, async () => {
+        if (hasPriority) {
+          await setBlockAttrs({
+            id: parentDocId,
+            attrs: {
+              [KIAttr['incremental']]: 'true'
+            }
+          })
+        } else {
+          await setBlockAttrs({
+            id: parentDocId,
+            attrs: {
+              [KIAttr['incremental']]: 'true',
+              [OuterAttr['priority']]: priority.toString()
+            }
+          })
+        }
+
+        await setBlockAttrs({
+          id: targetChildDoc.id,
+          attrs: {
+            [OuterAttr['priority']]: priority.toString()
+          }
+        })
+
+        showMessage('正在设置渐进式阅读文档，请稍后...')
+        await addCard(targetChildDoc.id)
+        setTimeout(async () => {
+          await addDocToTopic(targetChildDoc.id, 3, 'skip')
+          showMessage('成功设置了渐进式阅读流程！')
+        }, 5000)
+      })
+    }
+
+    submenus.push({
+      element: setIncrementalBtn
+    })
+
+    menu.addItem({
+      icon: 'iconKI',
+      label: 'KI',
+      type: 'submenu',
+      submenu: submenus
+    })
   }
 }

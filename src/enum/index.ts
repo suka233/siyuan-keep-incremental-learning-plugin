@@ -21,6 +21,16 @@ export enum KIAttr {
   bookmark = 'custom-ki-bookmark'
 }
 
+/**
+ * 其它插件的自定义属性
+ */
+export enum OuterAttr {
+  /**
+   * 闪卡的优先级
+   */
+  priority = 'custom-card-priority'
+}
+
 // 配色方案
 export enum KIColorScheme {
   // 默认

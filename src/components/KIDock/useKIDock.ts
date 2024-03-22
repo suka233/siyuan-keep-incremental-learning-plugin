@@ -6,7 +6,7 @@ const autoExpandParent = ref<boolean>(false)
 const scrollTo: (key) => void = () => {}
 export const useKIDock = () => {
   const setSelectedKeys = (paths: string[], selectKeys: string[]) => {
-    console.log(paths)
+    // console.log(paths)
     selectedKeys.value = selectKeys
     expandedKeys.value = paths
   }

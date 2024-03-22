@@ -170,8 +170,8 @@ export const useData = () => {
 
   const refreshTreeData = () => {
     treeData.value = genTree()
-    console.log('所有闪卡', allRiffCards.value)
-    console.log('树', treeData.value)
+    // console.log('所有闪卡', allRiffCards.value)
+    // console.log('树', treeData.value)
   }
 
   return {

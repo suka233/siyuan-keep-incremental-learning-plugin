@@ -209,7 +209,7 @@ export default class KIPlugin extends Plugin {
           if (blockElement.getAttribute('custom-ki-bookmark')) {
             const bookmarkId = blockElement.getAttribute('custom-ki-bookmark')
             const bookmarkElement = blockElement.querySelector(`div[data-node-id="${bookmarkId}"]`)
-            bookmarkElement?.scrollIntoView({ block: 'center' })
+            bookmarkElement?.scrollIntoView({ block: 'end' })
           }
 
           // 先清空上一次
@@ -218,7 +218,7 @@ export default class KIPlugin extends Plugin {
           const debouncedCallback = debounce((entries: IntersectionObserverEntry[]) => {
             entries.forEach((entry) => {
               if (entry.isIntersecting) {
-                console.log(entry.target.getAttribute('data-node-id'))
+                // console.log(entry.target.getAttribute('data-node-id'))
                 const bookmarkId = entry.target.getAttribute('data-node-id')!
                 isTopic &&
                   setBlockAttrs({
